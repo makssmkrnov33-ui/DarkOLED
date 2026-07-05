@@ -21,56 +21,43 @@ object NewsRepository {
 
     private fun parseRss(xml: String): List<Article> {
         val articles = mutableListOf<Article>()
-        val factory = DocumentBuilderFactory.newInstance()
-        val builder = factory.newDocumentBuilder()
-        val doc = builder.parse(StringReader(xml))
-        val items = doc.getElementsByTagName("item")
+        try {
+            val factory = DocumentBuilderFactory.newInstance()
+            val builder = factory.newDocumentBuilder()
+            val doc = builder.parse(StringReader(xml))
+            val nodeList = doc.getElementsByTagName("item")
 
-        for (i in 0 until items.length) {
-            val item = items.item(i)
-            val title = item.childNodes.let { nodes ->
-                var t = ""
-                for (j in 0 until nodes.length) {
-                    if (nodes.item(j).nodeName == "title") t = nodes.item(j).textContent
+            for (i in 0 until nodeList.length) {
+                val item = nodeList.item(i)
+                val childNodes = item.childNodes
+                var title = ""
+                var description = ""
+                var imageUrl: String? = null
+                var link = ""
+
+                for (j in 0 until childNodes.length) {
+                    val node = childNodes.item(j)
+                    when (node.nodeName) {
+                        "title" -> title = node.textContent ?: ""
+                        "description" -> description = node.textContent ?: ""
+                        "link" -> link = node.textContent ?: ""
+                        "enclosure" -> {
+                            val urlAttr = node.attributes?.getNamedItem("url")
+                            imageUrl = urlAttr?.textContent
+                        }
+                    }
                 }
-                t
-            } ?: ""
 
-            val description = item.childNodes.let { nodes ->
-                var d = ""
-                for (j in 0 until nodes.length) {
-                    if (nodes.item(j).nodeName == "description") d = nodes.item(j).textContent
-                }
-                d
-            } ?: ""
-
-            var imageUrl: String? = null
-            val enclosures = item.childNodes
-            for (j in 0 until enclosures.length) {
-                if (enclosures.item(j).nodeName == "enclosure") {
-                    imageUrl = enclosures.item(j).attributes.getNamedItem("url")?.textContent
-                }
-            }
-
-            val link = item.childNodes.let { nodes ->
-                var l = ""
-                for (j in 0 until nodes.length) {
-                    if (nodes.item(j).nodeName == "link") l = nodes.item(j).textContent
-                }
-                l
-            } ?: ""
-
-            articles.add(
-                Article(
-                    id = link,
-                    title = title,
+                articles.add(Article(
+                    id = link.ifEmpty { "article_$i" },
+                    title = title.ifEmpty { "Untitled" },
                     content = description,
                     imageUrl = imageUrl,
                     author = "TACC",
                     publishedAt = System.currentTimeMillis() - i * 60000L
-                )
-            )
-        }
+                ))
+            }
+        } catch (_: Exception) {}
         return articles
     }
 
