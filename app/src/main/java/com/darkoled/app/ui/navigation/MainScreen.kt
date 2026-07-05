@@ -55,35 +55,17 @@ fun MainScreen() {
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                     tonalElevation = 0.dp
                 ) {
-                    val items = listOf("Home", "Chats", "News", "Profile")
-                    val iconList = listOf<(Boolean, Modifier) -> Unit>(
-                        { s, m -> GlassHomeIcon(s, m) },
-                        { s, m -> GlassChatIcon(s, m) },
-                        { s, m -> GlassNewsIcon(s, m) },
-                        { s, m -> GlassProfileIcon(s, m) }
-                    )
-
-                    items.forEachIndexed { index, label ->
-                        val isSelected = selectedTab == index
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = { selectedTab = index },
-                            icon = {
-                                val scale by animateFloatAsState(
-                                    targetValue = if (isSelected) 1.15f else 0.95f,
-                                    animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
-                                    label = "iconScale"
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .graphicsLayer { scaleX = scale; scaleY = scale },
-                                    contentAlignment = Alignment.Center
-                                ) { iconList[index](isSelected, Modifier.size(24.dp)) }
-                            },
-                            label = { Text(label) },
-                            colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
-                        )
+                    GlassNavItem(0, "Home", selectedTab, { selectedTab = 0 }) {
+                        GlassHomeIcon(selectedTab == 0, Modifier.size(24.dp))
+                    }
+                    GlassNavItem(1, "Chats", selectedTab, { selectedTab = 1 }) {
+                        GlassChatIcon(selectedTab == 1, Modifier.size(24.dp))
+                    }
+                    GlassNavItem(2, "News", selectedTab, { selectedTab = 2 }) {
+                        GlassNewsIcon(selectedTab == 2, Modifier.size(24.dp))
+                    }
+                    GlassNavItem(3, "Profile", selectedTab, { selectedTab = 3 }) {
+                        GlassProfileIcon(selectedTab == 3, Modifier.size(24.dp))
                     }
                 }
 
@@ -123,21 +105,22 @@ fun MainScreen() {
 }
 
 @Composable
-private fun NavBarItem(
+private fun NavigationBarScope.GlassNavItem(
     index: Int,
     label: String,
-    selected: Boolean,
+    selectedTab: Int,
     onClick: () -> Unit,
-    iconContent: @Composable () -> Unit
+    icon: @Composable () -> Unit
 ) {
+    val isSelected = selectedTab == index
     val scale by animateFloatAsState(
-        targetValue = if (selected) 1.15f else 0.95f,
+        targetValue = if (isSelected) 1.15f else 0.95f,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
         label = "iconScale"
     )
 
     NavigationBarItem(
-        selected = selected,
+        selected = isSelected,
         onClick = onClick,
         icon = {
             Box(
@@ -145,7 +128,7 @@ private fun NavBarItem(
                     .size(56.dp)
                     .graphicsLayer { scaleX = scale; scaleY = scale },
                 contentAlignment = Alignment.Center
-            ) { iconContent() }
+            ) { icon() }
         },
         label = { Text(label) },
         colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
