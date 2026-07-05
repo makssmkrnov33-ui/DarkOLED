@@ -55,14 +55,9 @@ fun MainScreen() {
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                     tonalElevation = 0.dp
                 ) {
-                    val items = listOf(
-                        Triple("Home", Unit) { GlassHomeIcon(selectedTab == 0, Modifier.size(24.dp)) },
-                        Triple("Chats", Unit) { GlassChatIcon(selectedTab == 1, Modifier.size(24.dp)) },
-                        Triple("News", Unit) { GlassNewsIcon(selectedTab == 2, Modifier.size(24.dp)) },
-                        Triple("Profile", Unit) { GlassProfileIcon(selectedTab == 3, Modifier.size(24.dp)) }
-                    )
+                    val tabLabels = listOf("Home", "Chats", "News", "Profile")
 
-                    items.forEachIndexed { index, (label, _, icon) ->
+                    tabLabels.forEachIndexed { index, label ->
                         val isSelected = selectedTab == index
                         NavigationBarItem(
                             selected = isSelected,
@@ -82,7 +77,12 @@ fun MainScreen() {
                                         },
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    icon()
+                                    when (index) {
+                                        0 -> GlassHomeIcon(isSelected, Modifier.size(24.dp))
+                                        1 -> GlassChatIcon(isSelected, Modifier.size(24.dp))
+                                        2 -> GlassNewsIcon(isSelected, Modifier.size(24.dp))
+                                        3 -> GlassProfileIcon(isSelected, Modifier.size(24.dp))
+                                    }
                                 }
                             },
                             label = { Text(label) },
