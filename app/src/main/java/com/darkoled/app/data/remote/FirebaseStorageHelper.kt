@@ -1,6 +1,7 @@
 package com.darkoled.app.data.remote
 
 import android.net.Uri
+import com.google.android.gms.tasks.ktx.await
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 

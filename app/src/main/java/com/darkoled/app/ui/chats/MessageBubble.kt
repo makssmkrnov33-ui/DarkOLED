@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Lock
@@ -37,7 +38,7 @@ fun MessageBubble(message: Message) {
                 Icons.Rounded.Lock,
                 contentDescription = "Encrypted",
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.width(16.dp).height(16.dp).rotate(rotation)
+                modifier = Modifier.size(16.dp).rotate(rotation)
             )
         }
     }
