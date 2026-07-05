@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.darkoled.app.ui.home.HomeScreen
@@ -54,42 +55,17 @@ fun MainScreen() {
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                     tonalElevation = 0.dp
                 ) {
-                    val items = listOf(
-                        Triple("Home", Unit) { GlassHomeIcon(selectedTab == 0, Modifier.size(24.dp)) },
-                        Triple("Chats", Unit) { GlassChatIcon(selectedTab == 1, Modifier.size(24.dp)) },
-                        Triple("News", Unit) { GlassNewsIcon(selectedTab == 2, Modifier.size(24.dp)) },
-                        Triple("Profile", Unit) { GlassProfileIcon(selectedTab == 3, Modifier.size(24.dp)) }
-                    )
-
-                    items.forEachIndexed { index, (label, _, icon) ->
-                        val isSelected = selectedTab == index
-                        val scale by animateFloatAsState(
-                            targetValue = if (isSelected) 1.15f else 0.95f,
-                            animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
-                            label = "iconScale"
-                        )
-
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = { selectedTab = index },
-                            icon = {
-                                Box(
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .graphicsLayer {
-                                            scaleX = scale
-                                            scaleY = scale
-                                        },
-                                    contentAlignment = androidx.compose.ui.Alignment.Center
-                                ) {
-                                    icon()
-                                }
-                            },
-                            label = { Text(label) },
-                            colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = Color.Transparent
-                            )
-                        )
+                    NavBarItem(0, "Home", selectedTab == 0, { selectedTab = 0 }) {
+                        GlassHomeIcon(selectedTab == 0, Modifier.size(24.dp))
+                    }
+                    NavBarItem(1, "Chats", selectedTab == 1, { selectedTab = 1 }) {
+                        GlassChatIcon(selectedTab == 1, Modifier.size(24.dp))
+                    }
+                    NavBarItem(2, "News", selectedTab == 2, { selectedTab = 2 }) {
+                        GlassNewsIcon(selectedTab == 2, Modifier.size(24.dp))
+                    }
+                    NavBarItem(3, "Profile", selectedTab == 3, { selectedTab = 3 }) {
+                        GlassProfileIcon(selectedTab == 3, Modifier.size(24.dp))
                     }
                 }
 
@@ -97,19 +73,14 @@ fun MainScreen() {
                     val tabWidth = size.width / tabCount
                     val lineX = selectedTab * tabWidth + tabWidth / 2
                     val lineLen = tabWidth * 0.5f
-
                     drawLine(
                         brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF0084FF),
-                                Color(0xFF7C4DFF),
-                                Color(0xFFFF4081)
-                            )
+                            colors = listOf(Color(0xFF0084FF), Color(0xFF7C4DFF), Color(0xFFFF4081))
                         ),
                         start = Offset(lineX - lineLen, size.height / 2),
                         end = Offset(lineX + lineLen, size.height / 2),
                         strokeWidth = 3f,
-                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                        cap = StrokeCap.Round
                     )
                 }
             }
@@ -118,17 +89,47 @@ fun MainScreen() {
         AnimatedContent(
             targetState = selectedTab,
             transitionSpec = {
-                slideInHorizontally { width -> if (targetState > initialState) width else -width }
-                    .togetherWith(slideOutHorizontally { width -> if (targetState > initialState) -width else width })
+                slideInHorizontally { w -> if (targetState > initialState) w else -w }
+                    .togetherWith(slideOutHorizontally { w -> if (targetState > initialState) -w else w })
             },
             label = "tabContent"
         ) { tab ->
             when (tab) {
-                    0 -> HomeScreen(modifier = Modifier.padding(innerPadding))
+                0 -> HomeScreen(modifier = Modifier.padding(innerPadding))
                 1 -> ChatListScreen(modifier = Modifier.padding(innerPadding))
                 2 -> NewsFeedScreen(modifier = Modifier.padding(innerPadding))
                 3 -> SettingsScreen(modifier = Modifier.padding(innerPadding))
             }
         }
     }
+}
+
+@Composable
+private fun NavBarItem(
+    index: Int,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.15f else 0.95f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
+        label = "iconScale"
+    )
+
+    NavigationBarItem(
+        selected = selected,
+        onClick = onClick,
+        icon = {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .graphicsLayer { scaleX = scale; scaleY = scale },
+                contentAlignment = Alignment.Center
+            ) { icon() }
+        },
+        label = { Text(label) },
+        colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
+    )
 }

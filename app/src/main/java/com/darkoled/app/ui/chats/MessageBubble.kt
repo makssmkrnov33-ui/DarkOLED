@@ -3,6 +3,7 @@ package com.darkoled.app.ui.chats
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -42,8 +43,8 @@ fun MessageBubble(
 
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-        horizontalArrangement = if (isOutgoing) androidx.compose.ui.Alignment.End
-        else androidx.compose.ui.Alignment.Start
+        horizontalArrangement = if (isOutgoing) Arrangement.End
+        else Arrangement.Start
     ) {
         Column(
             modifier = Modifier
