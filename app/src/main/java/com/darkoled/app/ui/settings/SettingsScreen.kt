@@ -67,6 +67,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     var avatarUri by remember { mutableStateOf("") }
     var importedThemeColors by remember { mutableStateOf<List<Color>?>(null) }
 
+
     val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) avatarUri = uri.toString()
     }
