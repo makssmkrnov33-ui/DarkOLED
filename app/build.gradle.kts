@@ -67,8 +67,5 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-storage-ktx")
 
-    // Signal Protocol (E2EE)
-    implementation("org.signal:signal-protocol-java:2.1.0")
-
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

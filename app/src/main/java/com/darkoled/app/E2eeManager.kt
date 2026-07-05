@@ -1,22 +1,31 @@
 package com.darkoled.app
 
-import org.whispersystems.libsignal.IdentityKeyPair
-import org.whispersystems.libsignal.ecc.Curve
-import org.whispersystems.libsignal.state.PreKeyRecord
-import org.whispersystems.libsignal.state.SignedPreKeyRecord
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 class E2eeManager {
-    private val identityKeyPair: IdentityKeyPair = Curve.generateIdentityKeyPair()
-    private val preKeys = mutableListOf<PreKeyRecord>()
-    private var signedPreKey: SignedPreKeyRecord? = null
+    private var secretKey: SecretKey = KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
 
-    fun generatePreKeys(count: Int = 100) {
-        for (i in 0 until count) {
-            val keyPair = Curve.generateKeyPair()
-            preKeys.add(PreKeyRecord(i, keyPair))
-        }
+    fun encrypt(plaintext: ByteArray): ByteArray {
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+        val iv = cipher.iv
+        val encrypted = cipher.doFinal(plaintext)
+        return iv + encrypted
     }
 
-    fun encrypt(plaintext: ByteArray): ByteArray = plaintext
-    fun decrypt(ciphertext: ByteArray): ByteArray = ciphertext
+    fun decrypt(ciphertext: ByteArray): ByteArray {
+        val iv = ciphertext.copyOfRange(0, 12)
+        val encrypted = ciphertext.copyOfRange(12, ciphertext.size)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, iv))
+        return cipher.doFinal(encrypted)
+    }
+
+    fun setKey(keyBytes: ByteArray) {
+        secretKey = SecretKeySpec(keyBytes, "AES")
+    }
 }
