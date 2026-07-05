@@ -1,5 +1,9 @@
 package com.darkoled.app.ui.navigation
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -49,10 +53,19 @@ fun MainScreen() {
             }
         }
     ) { innerPadding ->
-        when (selectedTab) {
-            0 -> ChatListScreen(modifier = Modifier.padding(innerPadding))
-            1 -> NewsFeedScreen(modifier = Modifier.padding(innerPadding))
-            2 -> SettingsScreen(modifier = Modifier.padding(innerPadding))
+        AnimatedContent(
+            targetState = selectedTab,
+            transitionSpec = {
+                slideInHorizontally { width -> if (targetState > initialState) width else -width }
+                    .togetherWith(slideOutHorizontally { width -> if (targetState > initialState) -width else width })
+            },
+            label = "tabContent"
+        ) { tab ->
+            when (tab) {
+                0 -> ChatListScreen(modifier = Modifier.padding(innerPadding))
+                1 -> NewsFeedScreen(modifier = Modifier.padding(innerPadding))
+                2 -> SettingsScreen(modifier = Modifier.padding(innerPadding))
+            }
         }
     }
 }
