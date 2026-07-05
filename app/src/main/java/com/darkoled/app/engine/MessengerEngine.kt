@@ -34,6 +34,31 @@ class MessengerEngine(private val context: Context) {
 
     init {
         createChat("AI Assistant", isAI = true)
+        addDemoContacts()
+    }
+
+    private fun addDemoContacts() {
+        val russianNames = listOf(
+            "Алексей Иванов", "Мария Петрова", "Дмитрий Смирнов",
+            "Елена Кузнецова", "Сергей Васильев", "Анна Попова",
+            "Андрей Новиков", "Ольга Фёдорова", "Павел Морозов",
+            "Наталья Волкова", "Артём Козлов", "Юлия Лебедева"
+        )
+        russianNames.forEach { name ->
+            val id = System.currentTimeMillis() + name.hashCode()
+            val phone = "+7" + (9000000000L..9999999999L).random().toString().take(10)
+            val chat = Chat(id, name, "👤", phone, false, false)
+            chatStore[id] = chat
+            messageStore[id] = mutableListOf()
+            val msg = Message(
+                id = System.currentTimeMillis() + name.hashCode(),
+                chatId = id, text = "Привет! Как дела?",
+                type = MessageType.INCOMING, senderName = name,
+                timestamp = System.currentTimeMillis() - (1000..86400000).random()
+            )
+            messageStore[id]?.add(msg)
+        }
+        updateChatsFlow()
     }
 
     fun createChat(name: String, phone: String = "", isAI: Boolean = false, avatar: String = ""): Long {

@@ -9,9 +9,13 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,16 +26,19 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AttachFile
@@ -62,6 +69,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -344,9 +352,9 @@ private fun BottomInputBar(
         modifier = Modifier.fillMaxWidth().background(Color(0xFFFFF0F5)).padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onCamera) { Icon(Icons.Rounded.CameraAlt, "Camera", tint = Color(0xFFFF69B4)) }
-        IconButton(onClick = onMic) { Icon(Icons.Rounded.Mic, "Mic", tint = Color(0xFFFF69B4)) }
-        IconButton(onClick = onAttach) { Icon(Icons.Rounded.AttachFile, "Attach", tint = Color(0xFFFF69B4)) }
+        BounceIconBtn(onClick = onCamera) { Icon(Icons.Rounded.CameraAlt, "Camera", tint = Color(0xFFFF69B4)) }
+        BounceIconBtn(onClick = onMic) { Icon(Icons.Rounded.Mic, "Mic", tint = Color(0xFFFF69B4)) }
+        BounceIconBtn(onClick = onAttach) { Icon(Icons.Rounded.AttachFile, "Attach", tint = Color(0xFFFF69B4)) }
         Spacer(Modifier.width(6.dp))
         Box(
             modifier = Modifier.weight(1f).heightIn(min = 44.dp, max = 150.dp)
@@ -363,13 +371,40 @@ private fun BottomInputBar(
             )
         }
         Spacer(Modifier.width(6.dp))
+        val sendInteraction = remember { MutableInteractionSource() }
+        val isSendPressed by sendInteraction.collectIsPressedAsState()
+        val sendScale by animateFloatAsState(
+            targetValue = if (isSendPressed) 0.8f else 1f,
+            animationSpec = spring(dampingRatio = 0.4f, stiffness = 600f),
+            label = "sendBounce"
+        )
         Box(
-            modifier = Modifier.size(44.dp)
+            modifier = Modifier.size(44.dp).scale(sendScale)
                 .shadow(4.dp, RoundedCornerShape(22.dp)).clip(RoundedCornerShape(22.dp))
-                .background(Color(0xFF0084FF)).clickable { onSend() },
+                .background(Color(0xFF0084FF)).clickable(
+                    interactionSource = sendInteraction,
+                    indication = null,
+                    onClick = onSend
+                ),
             contentAlignment = Alignment.Center
         ) { Icon(Icons.Rounded.Send, "Send", tint = Color.White, modifier = Modifier.size(22.dp)) }
     }
+}
+
+@Composable
+private fun BounceIconBtn(onClick: () -> Unit, content: @Composable () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val btnScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.8f else 1f,
+        animationSpec = spring(dampingRatio = 0.4f, stiffness = 600f),
+        label = "iconBtnBounce"
+    )
+    IconButton(
+        onClick = onClick,
+        interactionSource = interactionSource,
+        modifier = Modifier.scale(btnScale)
+    ) { content() }
 }
 
 @Composable

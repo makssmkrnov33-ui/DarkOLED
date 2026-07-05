@@ -4,8 +4,12 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -32,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.darkoled.app.engine.MessengerManager
@@ -86,6 +90,13 @@ fun ChatListScreen(modifier: Modifier = Modifier, onChatClick: (Chat) -> Unit = 
             }
         }
 
+        val fabInteraction = remember { MutableInteractionSource() }
+        val isFabPressed by fabInteraction.collectIsPressedAsState()
+        val fabScale by animateFloatAsState(
+            targetValue = if (isFabPressed) 0.85f else 1f,
+            animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
+            label = "fabBounce"
+        )
         FloatingActionButton(
             onClick = {
                 if (PermissionHelper.isGranted(ctx, Manifest.permission.READ_CONTACTS)) {
@@ -93,7 +104,8 @@ fun ChatListScreen(modifier: Modifier = Modifier, onChatClick: (Chat) -> Unit = 
                     showContactPicker = true
                 } else contactsPermLauncher.launch(Manifest.permission.READ_CONTACTS)
             },
-            modifier = Modifier.padding(16.dp).align(Alignment.End),
+            interactionSource = fabInteraction,
+            modifier = Modifier.padding(16.dp).align(Alignment.End).scale(fabScale),
             containerColor = MaterialTheme.colorScheme.primary
         ) { Icon(Icons.Rounded.People, contentDescription = "Import contacts", tint = MaterialTheme.colorScheme.onPrimary) }
     }

@@ -7,6 +7,8 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,10 +24,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -74,9 +78,18 @@ fun MainScreen() {
 
                     tabLabels.forEachIndexed { index, label ->
                         val isSelected = selectedTab == index
+                        val interactionSource = remember { MutableInteractionSource() }
+                        val isPressed by interactionSource.collectIsPressedAsState()
+                        val navScale by animateFloatAsState(
+                            targetValue = if (isPressed) 0.85f else 1f,
+                            animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
+                            label = "navBounce"
+                        )
                         NavigationBarItem(
                             selected = isSelected,
                             onClick = { selectedTab = index },
+                            interactionSource = interactionSource,
+                            modifier = Modifier.scale(navScale),
                             icon = {
                                 val scale by animateFloatAsState(
                                     targetValue = if (isSelected) 1.15f else 0.95f,
