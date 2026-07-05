@@ -24,11 +24,10 @@ jobs:
         run: gradle wrapper --gradle-version 8.12
 
       - name: Build debug APK
-        run: |
-          ./gradlew assembleDebug 2>&1 | tee build.log
-          echo "=== KOTLIN ERRORS ==="
-          grep -E "^e:|^w:|error:" build.log || echo "No errors found in build.log"
-        shell: bash
+        run: ./gradlew assembleDebug
+
+      - name: Build release bundle
+        run: ./gradlew bundleRelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -36,9 +35,8 @@ jobs:
           name: dark-oled-debug
           path: app/build/outputs/apk/debug/*.apk
 
-      - name: Upload build log on failure
-        if: failure()
+      - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: build-log
-          path: build.log
+          name: dark-oled-release-aab
+          path: app/build/outputs/bundle/release/*.aab
