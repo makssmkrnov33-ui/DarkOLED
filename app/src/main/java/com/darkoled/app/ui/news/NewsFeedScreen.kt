@@ -194,6 +194,7 @@ private fun ReelsPage(article: Article, isActive: Boolean) {
         if (article.videoUrl != null) {
             VideoPlayer(
                 url = article.videoUrl,
+                fallbackImageUrl = article.imageUrl,
                 modifier = Modifier.fillMaxSize(),
                 isActive = isActive
             )

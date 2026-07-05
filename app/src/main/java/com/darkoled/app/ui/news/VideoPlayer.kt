@@ -26,11 +26,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,7 +44,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -52,12 +56,16 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
+
+private const val MAX_RETRIES = 2
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VideoPlayer(
     url: String,
+    fallbackImageUrl: String? = null,
     modifier: Modifier = Modifier,
     isActive: Boolean = false
 ) {
@@ -65,8 +73,14 @@ fun VideoPlayer(
     var showControls by remember { mutableStateOf(true) }
     var isPlaying by remember { mutableStateOf(isActive) }
     var volume by remember { mutableFloatStateOf(0.7f) }
+    var hasError by remember { mutableStateOf(false) }
+    var retryCount by remember { mutableIntStateOf(0) }
+    var loading by remember { mutableStateOf(true) }
 
     val exoPlayer = remember(url) {
+        hasError = false
+        retryCount = 0
+        loading = true
         ExoPlayer.Builder(context).build().apply {
             setMediaItem(MediaItem.fromUri(url))
             prepare()
@@ -75,12 +89,20 @@ fun VideoPlayer(
             repeatMode = Player.REPEAT_MODE_ONE
             addListener(object : Player.Listener {
                 override fun onPlayerError(error: PlaybackException) {
-                    stop()
-                    prepare()
+                    if (retryCount < MAX_RETRIES) {
+                        retryCount++
+                        stop()
+                        prepare()
+                    } else {
+                        hasError = true
+                        loading = false
+                    }
                 }
                 override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == Player.STATE_BUFFERING) {
-                        // still loading
+                    loading = playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_IDLE
+                    if (playbackState == Player.STATE_READY) {
+                        hasError = false
+                        loading = false
                     }
                 }
             })
@@ -112,6 +134,62 @@ fun VideoPlayer(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        if (hasError || !loading && exoPlayer.playbackState == Player.STATE_ENDED) {
+            if (fallbackImageUrl != null) {
+                AsyncImage(
+                    model = fallbackImageUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color(0xFF1A1A2E), Color(0xFF2D1B69), Color(0xFF0F0F1E))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("\uD83C\uDFAC", fontSize = 48.sp)
+                        Spacer(Modifier.height(8.dp))
+                        Text("Video unavailable", color = Color.White.copy(alpha = 0.5f), fontSize = 14.sp)
+                    }
+                }
+            }
+            return
+        }
+
+        if (loading && !hasError) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+            ) {
+                Box(
+                    modifier = Modifier.align(Alignment.Center)
+                ) {
+                    Canvas(modifier = Modifier.size(48.dp)) {
+                        val r = size.minDimension / 2
+                        drawCircle(Color.White.copy(alpha = 0.3f), radius = r)
+                        val arcSweep = 120f
+                        drawArc(
+                            Color(0xFFFF69B4),
+                            startAngle = (System.currentTimeMillis() % 2000) / 2000f * 360f,
+                            sweepAngle = arcSweep,
+                            useCenter = false,
+                            style = Stroke(width = 4f),
+                            topLeft = androidx.compose.ui.geometry.Offset(r * 0.3f, r * 0.3f),
+                            size = androidx.compose.ui.geometry.Size(r * 1.4f, r * 1.4f)
+                        )
+                    }
+                }
+            }
+        }
+
         AndroidView(
             factory = { ctx ->
                 val pv = PlayerView(ctx)
