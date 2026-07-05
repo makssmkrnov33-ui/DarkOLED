@@ -27,19 +27,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-
-data class Contact(val name: String, val phone: String, val initial: String)
+import com.darkoled.app.engine.Contact
 
 @Composable
-fun ContactPickerDialog(onDismiss: () -> Unit) {
-    val contacts = remember {
-        listOf(
-            Contact("Alice Johnson", "+1 555-0101", "A"),
-            Contact("Bob Smith", "+1 555-0102", "B"),
-            Contact("Charlie Brown", "+1 555-0103", "C"),
-            Contact("Diana Prince", "+1 555-0104", "D"),
-            Contact("Eve Wilson", "+1 555-0105", "E")
-        )
+fun ContactPickerDialog(contacts: List<Contact> = emptyList(), onDismiss: () -> Unit) {
+    val displayContacts = remember(contacts) {
+        if (contacts.isEmpty()) listOf(
+            Contact("Алексей Иванов", "+7 999 123-45-67"),
+            Contact("Мария Петрова", "+7 999 234-56-78"),
+            Contact("Дмитрий Смирнов", "+7 999 345-67-89"),
+            Contact("Елена Кузнецова", "+7 999 456-78-90"),
+            Contact("Сергей Васильев", "+7 999 567-89-01")
+        ) else contacts
     }
 
     Dialog(
@@ -59,21 +58,21 @@ fun ContactPickerDialog(onDismiss: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Contacts",
+                    "Контакты",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel", color = MaterialTheme.colorScheme.primary)
+                    Text("Отмена", color = MaterialTheme.colorScheme.primary)
                 }
             }
 
             Spacer(Modifier.height(12.dp))
 
             LazyColumn {
-                items(contacts) { contact ->
+                items(displayContacts) { contact ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -82,7 +81,7 @@ fun ContactPickerDialog(onDismiss: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            contact.initial,
+                            contact.name.firstOrNull()?.toString() ?: "?",
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)

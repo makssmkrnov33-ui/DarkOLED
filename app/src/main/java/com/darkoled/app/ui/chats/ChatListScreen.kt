@@ -51,6 +51,7 @@ fun ChatListScreen(modifier: Modifier = Modifier, onChatClick: (Chat) -> Unit = 
     val engine = remember { MessengerManager.engine }
     val engineChats by engine.chats.collectAsState()
     var showContactPicker by remember { mutableStateOf(false) }
+    val engineContacts by remember { mutableStateOf(engine.loadContacts()) }
 
     val contactsPermLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
@@ -111,6 +112,6 @@ fun ChatListScreen(modifier: Modifier = Modifier, onChatClick: (Chat) -> Unit = 
     }
 
     if (showContactPicker) {
-        ContactPickerDialog(onDismiss = { showContactPicker = false })
+        ContactPickerDialog(contacts = engineContacts, onDismiss = { showContactPicker = false })
     }
 }
