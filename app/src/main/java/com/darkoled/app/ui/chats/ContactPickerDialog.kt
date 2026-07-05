@@ -23,7 +23,7 @@ fun ContactPickerDialog(onDismiss: () -> Unit) {
         text = {
             Column {
                 Text(
-                    "Access your device contacts to find friends on Dark OLED.",
+                    "Access your device contacts to find friends on InstaSIM.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

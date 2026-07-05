@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.darkoled.app.theme.DarkOledTheme
+import com.darkoled.app.theme.InstaSimTheme
 import com.darkoled.app.ui.navigation.MainScreen
 
 class MainActivity : ComponentActivity() {
@@ -12,7 +12,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            DarkOledTheme {
+            InstaSimTheme {
                 MainScreen()
             }
         }

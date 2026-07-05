@@ -3,7 +3,7 @@ package com.darkoled.app
 import android.app.Application
 import com.darkoled.app.data.local.AppDatabase
 
-class DarkOledApp : Application() {
+class InstaSimApp : Application() {
     lateinit var database: AppDatabase
         private set
 

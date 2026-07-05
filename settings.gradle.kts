@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DarkOLED"
+rootProject.name = "InstaSIM"
 include(":app")

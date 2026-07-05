@@ -17,7 +17,7 @@ enum class AccentPreset(val label: String, val color: Color) {
 }
 
 @Composable
-fun DarkOledTheme(
+fun InstaSimTheme(
     themeMode: ThemeMode = ThemeMode.AUTO,
     accentColor: Color = AccentBlue,
     content: @Composable () -> Unit
