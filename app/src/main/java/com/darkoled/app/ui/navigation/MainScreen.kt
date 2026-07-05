@@ -55,17 +55,41 @@ fun MainScreen() {
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                     tonalElevation = 0.dp
                 ) {
-                    GlassNavItem(0, "Home", selectedTab, { selectedTab = 0 }) {
-                        GlassHomeIcon(selectedTab == 0, Modifier.size(24.dp))
-                    }
-                    GlassNavItem(1, "Chats", selectedTab, { selectedTab = 1 }) {
-                        GlassChatIcon(selectedTab == 1, Modifier.size(24.dp))
-                    }
-                    GlassNavItem(2, "News", selectedTab, { selectedTab = 2 }) {
-                        GlassNewsIcon(selectedTab == 2, Modifier.size(24.dp))
-                    }
-                    GlassNavItem(3, "Profile", selectedTab, { selectedTab = 3 }) {
-                        GlassProfileIcon(selectedTab == 3, Modifier.size(24.dp))
+                    val items = listOf(
+                        Triple("Home", Unit) { GlassHomeIcon(selectedTab == 0, Modifier.size(24.dp)) },
+                        Triple("Chats", Unit) { GlassChatIcon(selectedTab == 1, Modifier.size(24.dp)) },
+                        Triple("News", Unit) { GlassNewsIcon(selectedTab == 2, Modifier.size(24.dp)) },
+                        Triple("Profile", Unit) { GlassProfileIcon(selectedTab == 3, Modifier.size(24.dp)) }
+                    )
+
+                    items.forEachIndexed { index, (label, _, icon) ->
+                        val isSelected = selectedTab == index
+                        NavigationBarItem(
+                            selected = isSelected,
+                            onClick = { selectedTab = index },
+                            icon = {
+                                val scale by animateFloatAsState(
+                                    targetValue = if (isSelected) 1.15f else 0.95f,
+                                    animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
+                                    label = "iconScale"
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .graphicsLayer {
+                                            scaleX = scale
+                                            scaleY = scale
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    icon()
+                                }
+                            },
+                            label = { Text(label) },
+                            colors = NavigationBarItemDefaults.colors(
+                                indicatorColor = Color.Transparent
+                            )
+                        )
                     }
                 }
 
@@ -89,48 +113,17 @@ fun MainScreen() {
         AnimatedContent(
             targetState = selectedTab,
             transitionSpec = {
-                slideInHorizontally { w -> if (targetState > initialState) w else -w }
-                    .togetherWith(slideOutHorizontally { w -> if (targetState > initialState) -w else w })
+                slideInHorizontally { width -> if (targetState > initialState) width else -width }
+                    .togetherWith(slideOutHorizontally { width -> if (targetState > initialState) -width else width })
             },
             label = "tabContent"
         ) { tab ->
             when (tab) {
-                0 -> HomeScreen(modifier = Modifier.padding(innerPadding))
+                    0 -> HomeScreen(modifier = Modifier.padding(innerPadding))
                 1 -> ChatListScreen(modifier = Modifier.padding(innerPadding))
                 2 -> NewsFeedScreen(modifier = Modifier.padding(innerPadding))
                 3 -> SettingsScreen(modifier = Modifier.padding(innerPadding))
             }
         }
     }
-}
-
-@Composable
-private fun NavigationBarScope.GlassNavItem(
-    index: Int,
-    label: String,
-    selectedTab: Int,
-    onClick: () -> Unit,
-    icon: @Composable () -> Unit
-) {
-    val isSelected = selectedTab == index
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.15f else 0.95f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
-        label = "iconScale"
-    )
-
-    NavigationBarItem(
-        selected = isSelected,
-        onClick = onClick,
-        icon = {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .graphicsLayer { scaleX = scale; scaleY = scale },
-                contentAlignment = Alignment.Center
-            ) { icon() }
-        },
-        label = { Text(label) },
-        colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
-    )
 }
