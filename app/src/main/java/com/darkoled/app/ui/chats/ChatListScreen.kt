@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.darkoled.app.model.Chat
 
 @Composable
-fun ChatListScreen(modifier: Modifier = Modifier) {
+fun ChatListScreen(modifier: Modifier = Modifier, onChatClick: (Chat) -> Unit = {}) {
     val chats = remember { mockChats() }
     var showContactPicker by remember { mutableStateOf(false) }
 
@@ -49,7 +49,7 @@ fun ChatListScreen(modifier: Modifier = Modifier) {
                         visible = true,
                         enter = fadeIn() + slideInVertically { it / 2 }
                     ) {
-                        ChatItemWithSwipe(chat = chat)
+                        ChatItemWithSwipe(chat = chat, onClick = { onChatClick(chat) })
                     }
                 }
             }

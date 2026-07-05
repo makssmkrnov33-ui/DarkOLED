@@ -30,10 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,16 +37,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.darkoled.app.model.AccentScheme
 import com.darkoled.app.model.ChatTheme
 import com.darkoled.app.theme.AccentPreset
+import com.darkoled.app.theme.LocalThemeState
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
-    var selectedAccent by remember { mutableStateOf(AccentPreset.BLUE) }
-    var selectedTheme by remember { mutableStateOf(ChatTheme.PINK_GRADIENT) }
-    var selectedScheme by remember { mutableStateOf(AccentScheme.ELECTRIC_BLUE) }
+    val themeState = LocalThemeState.current
 
     Column(
         modifier = modifier
@@ -100,13 +94,13 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         ChatTheme.themes.forEach { theme ->
-                            val isSel = theme == selectedTheme
+                            val isSel = theme == themeState.chatTheme
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(modifier = Modifier.size(64.dp, 48.dp)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(Brush.verticalGradient(theme.backgroundColors))
                                     .then(if (isSel) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)) else Modifier)
-                                    .clickable { selectedTheme = theme })
+                                    .clickable { themeState.chatTheme = theme })
                                 Spacer(Modifier.height(4.dp))
                                 Text(theme.name, style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -128,46 +122,20 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         AccentPreset.entries.forEach { preset ->
-                            val isSel = preset == selectedAccent
+                            val isSel = preset == themeState.accentPreset
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(modifier = Modifier.size(48.dp).clip(CircleShape)
                                     .background(preset.color)
-                                    .clickable { selectedAccent = preset },
+                                    .clickable {
+                                        themeState.accentPreset = preset
+                                        themeState.accentColor = preset.color
+                                    },
                                     contentAlignment = Alignment.Center) {
                                     if (isSel) Box(modifier = Modifier.size(14.dp)
                                         .clip(CircleShape).background(Color.White))
                                 }
                                 Spacer(Modifier.height(6.dp))
                                 Text(preset.label, style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            Card(shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceVariant)) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Color Scheme", style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
-                    Spacer(Modifier.height(16.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        AccentScheme.entries.forEach { scheme ->
-                            val isSel = scheme == selectedScheme
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Box(modifier = Modifier.size(48.dp).clip(CircleShape)
-                                    .background(scheme.color)
-                                    .clickable { selectedScheme = scheme },
-                                    contentAlignment = Alignment.Center) {
-                                    if (isSel) Box(modifier = Modifier.size(14.dp)
-                                        .clip(CircleShape).background(Color.White))
-                                }
-                                Spacer(Modifier.height(6.dp))
-                                Text(scheme.label, style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }

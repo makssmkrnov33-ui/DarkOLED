@@ -60,7 +60,9 @@ fun NewsCardWithLike(article: Article, onClick: () -> Unit = {}) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column {
-            if (article.imageUrl != null) {
+            if (article.videoUrl != null) {
+                VideoPlayer(url = article.videoUrl)
+            } else if (article.imageUrl != null) {
                 Box(modifier = Modifier.fillMaxWidth().height(180.dp)) {
                     AsyncImage(
                         model = article.imageUrl,

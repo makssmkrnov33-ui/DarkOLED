@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -31,15 +32,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import com.darkoled.app.model.Chat
 import com.darkoled.app.ui.home.HomeScreen
+import com.darkoled.app.ui.chats.ChatDetailScreen
 import com.darkoled.app.ui.chats.ChatListScreen
 import com.darkoled.app.ui.news.NewsFeedScreen
 import com.darkoled.app.ui.settings.SettingsScreen
+import com.darkoled.app.theme.LocalThemeState
 
 @Composable
 fun MainScreen() {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var selectedChat by rememberSaveable { mutableStateOf<Chat?>(null) }
     val tabCount = 4
+    val themeState = LocalThemeState.current
+
+    if (selectedChat != null) {
+        ChatDetailScreen(
+            chat = selectedChat!!,
+            theme = themeState.chatTheme,
+            onBack = { selectedChat = null }
+        )
+        return
+    }
 
     Scaffold(
         bottomBar = {
@@ -120,7 +135,7 @@ fun MainScreen() {
         ) { tab ->
             when (tab) {
                     0 -> HomeScreen(modifier = Modifier.padding(innerPadding))
-                1 -> ChatListScreen(modifier = Modifier.padding(innerPadding))
+                 1 -> ChatListScreen(modifier = Modifier.padding(innerPadding), onChatClick = { selectedChat = it })
                 2 -> NewsFeedScreen(modifier = Modifier.padding(innerPadding))
                 3 -> SettingsScreen(modifier = Modifier.padding(innerPadding))
             }

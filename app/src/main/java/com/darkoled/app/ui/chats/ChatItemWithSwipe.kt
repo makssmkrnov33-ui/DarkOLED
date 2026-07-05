@@ -1,5 +1,6 @@
 package com.darkoled.app.ui.chats
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material3.Card
@@ -17,12 +18,13 @@ import com.darkoled.app.model.Chat
 import kotlin.math.roundToInt
 
 @Composable
-fun ChatItemWithSwipe(chat: Chat) {
+fun ChatItemWithSwipe(chat: Chat, onClick: () -> Unit = {}) {
     var offsetX by remember { mutableFloatStateOf(0f) }
 
     Card(
         modifier = Modifier
             .offset { IntOffset(offsetX.roundToInt(), 0) }
+            .clickable { onClick() }
             .pointerInput(Unit) {
                 detectHorizontalDragGestures(
                     onDragEnd = { offsetX = 0f },
