@@ -4,20 +4,70 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- face -->
     <path
-        android:fillColor="#1A1A2E"
-        android:pathData="M54,10C29.7,10 10,29.7 10,54s19.7,44 44,44s44,-19.7 44,-44S78.3,10 54,10z" />
+        android:fillColor="#FFE4E1"
+        android:pathData="M54,24C36.39,24 22,38.39 22,56s14.39,32 32,32s32,-14.39 32,-32S71.61,24 54,24z" />
+    <!-- hair left -->
     <path
-        android:fillColor="#E94560"
-        android:pathData="M54,20C42.95,20 33.46,28.15 31.42,38.77C36.15,36.35 41.58,36 46.73,38.1C50.49,39.64 53.6,42.58 56.35,45.33C59.68,48.66 63.03,52 67.29,53.89C72.65,56.33 78.87,55.91 83.82,52.78C80.94,34.74 68.96,20 54,20z" />
+        android:fillColor="#FF69B4"
+        android:pathData="M30,30C24,36 22,44 22,54c0,-18 14,-32 32,-32c-5,0 -10,2 -14,6l-4,4 -6,-2z" />
+    <!-- hair right -->
     <path
-        android:fillColor="#0F3460"
-        android:pathData="M82.41,56.24C82.28,57.07 82.08,57.88 81.82,58.66C78.47,68.31 69.74,75.15 59.54,76.11C55.62,76.5 51.64,75.89 48.12,74.37C44.93,73 42.08,71 39.43,68.7C38.64,68 37.88,67.27 37.14,66.52C37.63,72.79 41.06,78.53 46.47,81.91C51.88,85.29 58.53,85.99 64.56,83.78C70.59,81.57 75.25,76.74 77.25,70.78C78.53,66.81 78.87,62.54 82.41,56.24z" />
+        android:fillColor="#FF69B4"
+        android:pathData="M78,30C84,36 86,44 86,54c0,-18 -14,-32 -32,-32c5,0 10,2 14,6l4,4 6,-2z" />
+    <!-- hair top -->
     <path
-        android:fillColor="#16213E"
-        android:pathData="M32.54,41.13C31.2,45.01 29.49,49.28 29.5,54.06C29.5,60.26 31.64,66.09 35.11,71.1C32.46,66.55 30.68,61.32 30.68,55.76C30.68,48.57 36.95,42.74 43.63,40.36C38.88,39.54 34.7,40.71 32.54,41.13z" />
+        android:fillColor="#FF69B4"
+        android:pathData="M42,28C46,24 50,22 54,22c4,0 8,2 12,6l-2,4c-3,-3 -6,-5 -10,-5s-7,2 -10,5l-2,-4z" />
+    <!-- left eye -->
     <path
-        android:fillColor="#E94560"
-        android:fillAlpha="0.3"
-        android:pathData="M54,74C65.05,74 74,65.05 74,54C74,42.95 65.05,34 54,34C42.95,34 34,42.95 34,54C34,65.05 42.95,74 54,74z" />
+        android:fillColor="#333333"
+        android:pathData="M42,48C42,45.79 43.79,44 46,44s4,1.79 4,4s-1.79,4 -4,4s-4,-1.79 -4,-4z" />
+    <!-- right eye -->
+    <path
+        android:fillColor="#333333"
+        android:pathData="M58,48C58,45.79 59.79,44 62,44s4,1.79 4,4s-1.79,4 -4,4s-4,-1.79 -4,-4z" />
+    <!-- left eye shine -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,46.5m1.5,0a1.5,1.5 0,1 1,-3 0a1.5,1.5 0,1 1,3 0" />
+    <!-- right eye shine -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M60,46.5m1.5,0a1.5,1.5 0,1 1,-3 0a1.5,1.5 0,1 1,3 0" />
+    <!-- blush left -->
+    <path
+        android:fillColor="#FFB6C1"
+        android:fillAlpha="0.6"
+        android:pathData="M36,56m5,0a5,5 0,1 1,-10 0a5,5 0,1 1,10 0" />
+    <!-- blush right -->
+    <path
+        android:fillColor="#FFB6C1"
+        android:fillAlpha="0.6"
+        android:pathData="M72,56m5,0a5,5 0,1 1,-10 0a5,5 0,1 1,10 0" />
+    <!-- mouth -->
+    <path
+        android:fillColor="#FF69B4"
+        android:pathData="M50,62c1.33,2 4.67,2 6,0c-1,1 -5,1 -6,0z" />
+    <!-- star left -->
+    <path
+        android:fillColor="#FFD700"
+        android:fillAlpha="0.7"
+        android:pathData="M20,24l1.5,-4.5l4.5,-1.5l-4.5,-1.5l-1.5,-4.5l-1.5,4.5l-4.5,1.5l4.5,1.5z" />
+    <!-- star right -->
+    <path
+        android:fillColor="#FFD700"
+        android:fillAlpha="0.7"
+        android:pathData="M84,24l1.5,-4.5l4.5,-1.5l-4.5,-1.5l-1.5,-4.5l-1.5,4.5l-4.5,1.5l4.5,1.5z" />
+    <!-- sparkle bottom left -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.5"
+        android:pathData="M16,70l1,-3l3,-1l-3,-1l-1,-3l-1,3l-3,1l3,1z" />
+    <!-- sparkle bottom right -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.5"
+        android:pathData="M88,70l1,-3l3,-1l-3,-1l-1,-3l-1,3l-3,1l3,1z" />
 </vector>
