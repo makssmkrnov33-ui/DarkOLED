@@ -13,52 +13,57 @@ object NewsRepository {
         try {
             val url = java.net.URL(RSS_URL)
             val xml = url.readText()
-            parseRss(xml)
+            parseRssSimple(xml)
         } catch (e: Exception) {
             fallbackNews()
         }
     }
 
-    private fun parseRss(xml: String): List<Article> {
+    private fun parseRssSimple(xml: String): List<Article> {
         val articles = mutableListOf<Article>()
-        try {
-            val factory = DocumentBuilderFactory.newInstance()
-            val builder = factory.newDocumentBuilder()
-            val doc = builder.parse(StringReader(xml))
-            val nodeList = doc.getElementsByTagName("item")
-
-            for (i in 0 until nodeList.length) {
-                val item = nodeList.item(i)
-                val childNodes = item.childNodes
-                var title = ""
-                var description = ""
-                var imageUrl: String? = null
-                var link = ""
-
-                for (j in 0 until childNodes.length) {
-                    val node = childNodes.item(j)
-                    when (node.nodeName) {
-                        "title" -> title = node.textContent ?: ""
-                        "description" -> description = node.textContent ?: ""
-                        "link" -> link = node.textContent ?: ""
-                        "enclosure" -> {
-                            val urlAttr = node.attributes?.getNamedItem("url")
-                            imageUrl = urlAttr?.textContent
-                        }
-                    }
-                }
-
+        val items = xml.split("<item>").drop(1)
+        for (item in items) {
+            val title = extractTag(item, "title")
+            val desc = extractTag(item, "description")
+            val link = extractTag(item, "link")
+            val imgUrl = extractEnclosure(item)
+            if (title != null) {
                 articles.add(Article(
-                    id = link.ifEmpty { "article_$i" },
-                    title = title.ifEmpty { "Untitled" },
-                    content = description,
-                    imageUrl = imageUrl,
+                    id = link ?: "a_${articles.size}",
+                    title = title,
+                    content = desc ?: "",
+                    imageUrl = imgUrl,
                     author = "TACC",
-                    publishedAt = System.currentTimeMillis() - i * 60000L
+                    publishedAt = System.currentTimeMillis() - articles.size * 60000L
                 ))
             }
-        } catch (_: Exception) {}
+        }
         return articles
+    }
+
+    private fun extractTag(xml: String, tag: String): String? {
+        val open = "<$tag>"
+        val close = "</$tag>"
+        val s = xml.indexOf(open)
+        if (s == -1) return null
+        val e = xml.indexOf(close, s)
+        if (e == -1) return null
+        val raw = xml.substring(s + open.length, e)
+        return raw.replace("<![CDATA[", "").replace("]]>", "").trim()
+    }
+
+    private fun extractEnclosure(xml: String): String? {
+        val marker = "<enclosure"
+        val s = xml.indexOf(marker)
+        if (s == -1) return null
+        val e = xml.indexOf("/>", s)
+        if (e == -1) return null
+        val tag = xml.substring(s, e + 2)
+        val urlMarker = "url=\""
+        val us = tag.indexOf(urlMarker)
+        if (us == -1) return null
+        val ue = tag.indexOf("\"", us + urlMarker.length)
+        return if (ue == -1) null else tag.substring(us + urlMarker.length, ue)
     }
 
     private fun fallbackNews(): List<Article> = listOf(
