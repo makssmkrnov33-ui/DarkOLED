@@ -1,9 +1,10 @@
 package com.darkoled.app.ui.news
 
-import androidx.compose.animation.animateColorAsState
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,10 +25,10 @@ import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -40,60 +41,71 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
-import com.darkoled.app.data.remote.NewsRepository
 import com.darkoled.app.model.AnimeAvatar
-import com.darkoled.app.model.Article
+import com.darkoled.app.model.ShortVideo
 import com.darkoled.app.theme.LocalThemeState
 import com.darkoled.app.theme.ThemeMode
 
+private val shortsData = listOf(
+    ShortVideo("s1", "Первый клип на VK Видео", "https://vkvideo.ru/clip-108140506_456245247",
+        "VK Клипы", 1543, 89, 432),
+    ShortVideo("s2", "Тестовое видео Google", "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        "Google Sample", 8921, 456, 2341),
+    ShortVideo("s3", "Веселье на природе", "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+        "Travel Vlog", 6543, 321, 1876),
+    ShortVideo("s4", "Красивый закат", "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+        "Nature", 3210, 189, 765),
+    ShortVideo("s5", "Музыкальный клип", "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+        "Music", 15678, 1023, 5678),
+    ShortVideo("s6", "Экстремальный спорт", "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
+        "Sport", 7654, 567, 2345)
+)
+
 @Composable
 fun NewsFeedScreen(modifier: Modifier = Modifier) {
-    var articles by remember { mutableStateOf<List<Article>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var searchQuery by remember { mutableStateOf("") }
-    var notificationCount by remember { mutableIntStateOf(3) }
     val themeState = LocalThemeState.current
+    var likedSet by remember { mutableStateOf(setOf<String>()) }
+    var starredSet by remember { mutableStateOf(setOf<String>()) }
 
-    LaunchedEffect(Unit) {
-        articles = NewsRepository.fetchNews()
-        isLoading = false
-    }
+    val pagerState = rememberPagerState(pageCount = { shortsData.size })
+    val ctxForShare = LocalContext.current
 
-    val filtered = remember(articles, searchQuery) {
-        if (searchQuery.isBlank()) articles
-        else articles.filter {
-            it.title.contains(searchQuery, ignoreCase = true) ||
-            it.content.contains(searchQuery, ignoreCase = true)
-        }
-    }
-
-    val pagerState = rememberPagerState(pageCount = { filtered.size.coerceAtLeast(1) })
-
-    Box(modifier = modifier.fillMaxSize()) {
-        if (isLoading || filtered.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Loading...", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        } else {
-            VerticalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize()
-            ) { page ->
-                ReelsPage(
-                    article = filtered[page],
-                    isActive = page == pagerState.currentPage
-                )
-            }
+    Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
+        VerticalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            ShortsPage(
+                video = shortsData[page],
+                isActive = page == pagerState.currentPage,
+                isLiked = shortsData[page].id in likedSet,
+                isStarred = shortsData[page].id in starredSet,
+                onLike = {
+                    val s = likedSet.toMutableSet()
+                    if (shortsData[page].id in s) s.remove(shortsData[page].id) else s.add(shortsData[page].id)
+                    likedSet = s
+                },
+                onStar = {
+                    val s = starredSet.toMutableSet()
+                    if (shortsData[page].id in s) s.remove(shortsData[page].id) else s.add(shortsData[page].id)
+                    starredSet = s
+                },
+                onShare = { video ->
+                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_TEXT, "${video.title} - ${video.videoUrl}")
+                    }
+                    ctxForShare.startActivity(android.content.Intent.createChooser(intent, "Share"))
+                }
+            )
         }
 
         Box(
@@ -103,83 +115,35 @@ fun NewsFeedScreen(modifier: Modifier = Modifier) {
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(Color(0xCC0F0F1E), Color.Transparent),
-                        startY = 0f,
-                        endY = Float.POSITIVE_INFINITY
+                        startY = 0f, endY = Float.POSITIVE_INFINITY
                     )
                 )
                 .padding(top = 8.dp)
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    Text(
+                        if (themeState.themeMode == ThemeMode.DARK) "\uD83C\uDF19 Shorts" else "\u2600\uFE0F Shorts",
+                        color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp
+                    )
+                }
                 Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(44.dp)
-                        .clip(RoundedCornerShape(22.dp))
+                        .size(44.dp).clip(CircleShape)
                         .background(Color.White.copy(alpha = 0.12f))
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("\uD83D\uDD0D", fontSize = 16.sp)
-                        Spacer(Modifier.width(8.dp))
-                        BasicTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            singleLine = true,
-                            cursorBrush = SolidColor(Color(0xFFFF69B4)),
-                            modifier = Modifier.fillMaxWidth(),
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                color = Color.White.copy(alpha = 0.8f)
-                            ),
-                            decorationBox = { innerTextField ->
-                                if (searchQuery.isEmpty()) {
-                                    Text(
-                                        "Search news...",
-                                        color = Color.White.copy(alpha = 0.4f),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                                innerTextField()
+                        .clickable {
+                            themeState.themeMode = when (themeState.themeMode) {
+                                ThemeMode.DARK -> ThemeMode.LIGHT
+                                ThemeMode.LIGHT -> ThemeMode.DARK
+                                ThemeMode.AUTO -> ThemeMode.DARK
                             }
-                        )
-                    }
-                }
-
-                Spacer(Modifier.width(12.dp))
-
-                Box(modifier = Modifier.size(44.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.12f))
-                            .clickable { notificationCount = 0 },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("\uD83D\uDD14", fontSize = 20.sp)
-                    }
-                    if (notificationCount > 0) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFF4081)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "$notificationCount",
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(if (themeState.themeMode == ThemeMode.DARK) "\uD83C\uDF19" else "\u2600\uFE0F", fontSize = 20.sp)
                 }
             }
         }
@@ -187,58 +151,51 @@ fun NewsFeedScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ReelsPage(article: Article, isActive: Boolean) {
-    val context = LocalContext.current
-    val themeState = LocalThemeState.current
-    var liked by remember(article.id) { mutableStateOf(false) }
-    var likes by remember(article.id) { mutableIntStateOf(article.likes) }
-    var starred by remember(article.id) { mutableStateOf(article.isStarred) }
+private fun ShortsPage(
+    video: ShortVideo,
+    isActive: Boolean,
+    isLiked: Boolean,
+    isStarred: Boolean,
+    onLike: () -> Unit,
+    onStar: () -> Unit,
+    onShare: (ShortVideo) -> Unit
+) {
+    val ctx = LocalContext.current
+    var likes by remember(video.id, isLiked) { mutableIntStateOf(video.likes + if (isLiked) 1 else 0) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (article.videoUrl != null) {
+        if (video.videoUrl.contains("vkvideo.ru") || video.videoUrl.contains("vk.com")) {
+            AndroidView(
+                factory = { context ->
+                    WebView(context).apply {
+                        webViewClient = WebViewClient()
+                        webChromeClient = WebChromeClient()
+                        settings.javaScriptEnabled = true
+                        settings.mediaPlaybackRequiresUserGesture = false
+                        settings.loadWithOverviewMode = true
+                        settings.useWideViewPort = true
+                        loadUrl(video.videoUrl)
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
             VideoPlayer(
-                url = article.videoUrl,
-                fallbackImageUrl = article.imageUrl,
+                url = video.videoUrl,
                 modifier = Modifier.fillMaxSize(),
                 isActive = isActive
             )
-        } else if (article.imageUrl != null) {
-            AsyncImage(
-                model = article.imageUrl,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color(0xFF1A1A2E), Color(0xFF2D1B69), Color(0xFF0F0F1E))
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    article.title.firstOrNull()?.toString()?.uppercase() ?: "?",
-                    fontSize = 64.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White.copy(alpha = 0.15f)
-                )
-            }
         }
 
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .height(280.dp)
+                .height(240.dp)
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(Color.Transparent, Color(0xCC0A0A14)),
-                        startY = 0f,
-                        endY = Float.POSITIVE_INFINITY
+                        startY = 0f, endY = Float.POSITIVE_INFINITY
                     )
                 )
         )
@@ -246,33 +203,16 @@ private fun ReelsPage(article: Article, isActive: Boolean) {
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = 16.dp, end = 72.dp, bottom = 80.dp)
+                .padding(start = 16.dp, end = 72.dp, bottom = 60.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(Color(0xFFFF69B4), Color(0xFF7C4DFF))
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    AsyncImage(
-                        model = AnimeAvatar.getAvatarUrl(article.author),
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp).clip(CircleShape)
-                    )
-                }
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    article.author,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
+                AsyncImage(
+                    model = AnimeAvatar.getAvatarUrl(video.author),
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp).clip(CircleShape)
                 )
+                Spacer(Modifier.width(10.dp))
+                Text(video.author, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 Spacer(Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
@@ -280,30 +220,14 @@ private fun ReelsPage(article: Article, isActive: Boolean) {
                         .background(Color(0xFFFF69B4).copy(alpha = 0.3f))
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
-                    Text("Follow", color = Color(0xFFFF69B4), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Подписаться", color = Color(0xFFFF69B4), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
-
             Spacer(Modifier.height(8.dp))
-
-            Text(
-                article.title,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
+            Text(video.title, color = Color.White, fontWeight = FontWeight.Bold,
+                fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(4.dp))
-
-            Text(
-                article.content,
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 13.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            Text("${video.likes} просмотров", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
         }
 
         Column(
@@ -313,129 +237,32 @@ private fun ReelsPage(article: Article, isActive: Boolean) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            ReelsActionButton(
-                emoji = if (starred) "\u2B50" else "\u2606",
-                label = "",
-                isActive = starred,
-                activeColor = Color(0xFFFFD700),
-                onClick = { starred = !starred }
-            )
-
-            ReelsActionButton(
-                emoji = if (liked) "\uD83D\uDC97" else "\uD83E\uDD0D",
-                label = formatCount(likes),
-                isActive = liked,
-                activeColor = Color(0xFFFF4081),
-                onClick = {
-                    liked = !liked
-                    likes += if (liked) 1 else -1
-                }
-            )
-
-            ReelsActionButton(
-                emoji = "\uD83D\uDCAC",
-                label = formatCount(article.commentCount),
-                isActive = false,
-                activeColor = Color.White,
-                onClick = {}
-            )
-
-            ReelsActionButton(
-                emoji = "\uD83D\uDCE4",
-                label = formatCount(article.shareCount),
-                isActive = false,
-                activeColor = Color.White,
-                onClick = {
-                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(android.content.Intent.EXTRA_TEXT, "${article.title} - ${article.content}")
-                    }
-                    context.startActivity(android.content.Intent.createChooser(intent, "Share"))
-                }
-            )
-
-            ReelsActionButton(
-                emoji = if (themeState.themeMode == ThemeMode.DARK) "\uD83C\uDF19" else "\u2600\uFE0F",
-                label = "",
-                isActive = themeState.themeMode == ThemeMode.DARK,
-                activeColor = Color(0xFF7C4DFF),
-                onClick = {
-                    themeState.themeMode = when (themeState.themeMode) {
-                        ThemeMode.DARK -> ThemeMode.LIGHT
-                        ThemeMode.LIGHT -> ThemeMode.DARK
-                        ThemeMode.AUTO -> ThemeMode.DARK
-                    }
-                }
-            )
-        }
-
-        Canvas(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 8.dp)
-                .size(width = 120.dp, height = 4.dp)
-        ) {
-            drawRoundRect(
-                Color.White.copy(alpha = 0.3f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2f, 2f)
-            )
+            ShortsBtn(if (isStarred) "\u2B50" else "\u2606", "", isStarred, Color(0xFFFFD700), onStar)
+            ShortsBtn(if (isLiked) "\uD83D\uDC97" else "\uD83E\uDD0D", formatCount(likes), isLiked, Color(0xFFFF4081), onLike)
+            ShortsBtn("\uD83D\uDCAC", formatCount(video.comments), false, Color.White, {})
+            ShortsBtn("\uD83D\uDCE4", formatCount(video.shares), false, Color.White, { onShare(video) })
         }
     }
 }
 
 @Composable
-private fun ReelsActionButton(
-    emoji: String,
-    label: String,
-    isActive: Boolean,
-    activeColor: Color,
-    onClick: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val btnScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.8f else 1f,
-        animationSpec = spring(dampingRatio = 0.4f, stiffness = 600f),
-        label = "reelsBtn"
-    )
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clip(CircleShape)
-            .width(44.dp)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
-            .scale(btnScale)
-            .padding(vertical = 4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(
-                    if (isActive) activeColor.copy(alpha = 0.2f)
-                    else Color.White.copy(alpha = 0.08f)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
+private fun ShortsBtn(emoji: String, label: String, active: Boolean, activeColor: Color, onClick: () -> Unit) {
+    val src = remember { MutableInteractionSource() }
+    val pressed by src.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.8f else 1f, spring(0.4f, 600f), label = "s")
+    Column(horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(44.dp).clip(CircleShape).clickable(interactionSource = src, indication = null, onClick = onClick).scale(scale).padding(vertical = 4.dp)) {
+        Box(modifier = Modifier.size(44.dp).clip(CircleShape)
+            .background(if (active) activeColor.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.08f)),
+            contentAlignment = Alignment.Center) {
             Text(emoji, fontSize = 22.sp)
         }
-        if (label.isNotEmpty()) {
-            Text(
-                label,
-                color = Color.White,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
+        if (label.isNotEmpty()) Text(label, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
     }
 }
 
-private fun formatCount(count: Int): String = when {
-    count >= 1_000_000 -> "${count / 1_000_000}M"
-    count >= 1_000 -> "${count / 1_000}K"
-    else -> "$count"
+private fun formatCount(c: Int) = when {
+    c >= 1_000_000 -> "${c / 1_000_000}M"
+    c >= 1_000 -> "${c / 1_000}K"
+    else -> "$c"
 }
