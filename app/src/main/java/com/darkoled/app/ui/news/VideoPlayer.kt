@@ -76,6 +76,7 @@ fun VideoPlayer(
     var hasError by remember { mutableStateOf(false) }
     var retryCount by remember { mutableIntStateOf(0) }
     var loading by remember { mutableStateOf(true) }
+    var loadingTimeout by remember { mutableStateOf(false) }
 
     val exoPlayer = remember(url) {
         hasError = false
@@ -116,6 +117,13 @@ fun VideoPlayer(
         } else {
             exoPlayer.pause()
             isPlaying = false
+        }
+    }
+
+    LaunchedEffect(loading, isActive) {
+        if (loading && isActive) {
+            delay(15000)
+            if (loading && !hasError) loadingTimeout = true
         }
     }
 
@@ -172,19 +180,44 @@ fun VideoPlayer(
                 Box(
                     modifier = Modifier.align(Alignment.Center)
                 ) {
-                    Canvas(modifier = Modifier.size(48.dp)) {
-                        val r = size.minDimension / 2
-                        drawCircle(Color.White.copy(alpha = 0.3f), radius = r)
-                        val arcSweep = 120f
-                        drawArc(
-                            Color(0xFFFF69B4),
-                            startAngle = (System.currentTimeMillis() % 2000) / 2000f * 360f,
-                            sweepAngle = arcSweep,
-                            useCenter = false,
-                            style = Stroke(width = 4f),
-                            topLeft = androidx.compose.ui.geometry.Offset(r * 0.3f, r * 0.3f),
-                            size = androidx.compose.ui.geometry.Size(r * 1.4f, r * 1.4f)
-                        )
+                    if (loadingTimeout) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("\u26A0\uFE0F", fontSize = 40.sp)
+                            Spacer(Modifier.height(8.dp))
+                            Text("Видео долго загружается",
+                                color = Color.White.copy(alpha = 0.5f), fontSize = 13.sp)
+                            Spacer(Modifier.height(12.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFFF69B4).copy(alpha = 0.2f))
+                                    .clickable {
+                                        loadingTimeout = false
+                                        retryCount = 0
+                                        hasError = false
+                                        exoPlayer.stop()
+                                        exoPlayer.prepare()
+                                    }
+                                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                            ) {
+                                Text("Повторить", color = Color(0xFFFF69B4), fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                    } else {
+                        Canvas(modifier = Modifier.size(48.dp)) {
+                            val r = size.minDimension / 2
+                            drawCircle(Color.White.copy(alpha = 0.3f), radius = r)
+                            val arcSweep = 120f
+                            drawArc(
+                                Color(0xFFFF69B4),
+                                startAngle = (System.currentTimeMillis() % 2000) / 2000f * 360f,
+                                sweepAngle = arcSweep,
+                                useCenter = false,
+                                style = Stroke(width = 4f),
+                                topLeft = androidx.compose.ui.geometry.Offset(r * 0.3f, r * 0.3f),
+                                size = androidx.compose.ui.geometry.Size(r * 1.4f, r * 1.4f)
+                            )
+                        }
                     }
                 }
             }

@@ -6,7 +6,6 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
-import android.speech.tts.Voice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +15,8 @@ class VoiceAIEngine(private val context: Context) {
 
     private var tts: TextToSpeech? = null
     private var recognizer: SpeechRecognizer? = null
-    private var isListening = false
+    private var ttsReady = false
+    private var listening = false
 
     private val _isListening = MutableStateFlow(false)
     val isListeningFlow: StateFlow<Boolean> = _isListening.asStateFlow()
@@ -30,21 +30,22 @@ class VoiceAIEngine(private val context: Context) {
     private val _transcript = MutableStateFlow("")
     val transcript: StateFlow<String> = _transcript.asStateFlow()
 
-    private val _status = MutableStateFlow("Готова")
+    private val _status = MutableStateFlow("Загрузка голоса...")
     val status: StateFlow<String> = _status.asStateFlow()
 
     private val memory = mutableMapOf<String, String>()
     private val learned = mutableListOf<String>()
 
-    private val defaultResponses = mapOf(
-        "привет" to "Приветик! Я твоя голосовая ассистентка. Как дела?",
-        "как дела" to "У меня всё отлично! Спасибо, что спросил!",
-        "пока" to "Пока-пока! Буду скучать!",
-        "спасибо" to "Пожалуйста! Обращайся ещё!",
-        "помощь" to "Я могу запоминать всё, что ты говоришь. Просто нажми кнопку обучения и скажи что-нибудь!",
-        "расскажи о себе" to "Я молодая ассистентка, мне 18 лет. Я учусь на каждом разговоре и становлюсь умнее!",
-        "кто ты" to "Я твой голосовой помощник с красивым молодым голосом. Я запоминаю всё, что ты говоришь в режиме обучения.",
-        "что ты умеешь" to "Я слушаю, запоминаю и отвечаю голосом. Нажми 🎓 обучение, и я запомню всё, что ты скажешь!"
+    private val responses = mapOf(
+        "привет" to "Приветик! Я твоя ассистентка. Как настроение?",
+        "как дела" to "У меня всё замечательно! Спасибо, что спросил!",
+        "пока" to "Пока-пока! Буду ждать нашего следующего разговора!",
+        "спасибо" to "Пожалуйста! Я всегда рада помочь!",
+        "помощь" to "Я запоминаю всё, что ты говоришь в режиме обучения. Просто нажми 🎓!",
+        "кто тебя создал" to "Меня создала команда DarkOLED. Они вложили в меня всю свою любовь!",
+        "расскажи о себе" to "Мне 18 лет, я голосовая ассистентка. Я учусь каждый день, чтобы лучше понимать тебя!",
+        "ты красивая" to "Ой, спасибо! Ты меня смущаешь 🥰",
+        "что ты умеешь" to "Я слушаю, запоминаю и отвечаю голосом. Включи обучение — и я запомню всё, что ты скажешь!"
     )
 
     fun init() {
@@ -54,25 +55,34 @@ class VoiceAIEngine(private val context: Context) {
                 tts?.setPitch(1.3f)
                 tts?.setSpeechRate(0.9f)
                 try {
-                    val voices = tts?.voices?.filter { it.name.contains("female", true) || it.name.contains("ru", true) }
-                    voices?.firstOrNull()?.let { tts?.voice = it }
+                    val voice = tts?.voices?.find {
+                        it.name.contains("female", true) || it.name.contains("ru-ru", true)
+                    }
+                    voice?.let { tts?.voice = it }
                 } catch (_: Exception) {}
+                ttsReady = true
                 _status.value = "Голос загружен"
-                startListening()
+                if (listening) startRecognizer()
             }
         }
     }
 
     fun speak(text: String) {
+        if (!ttsReady) return
         _isSpeaking.value = true
         _status.value = "Говорю..."
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "ai_msg")
-    }
-
-    fun stopSpeaking() {
-        tts?.stop()
-        _isSpeaking.value = false
-        _status.value = "Слушаю..."
+        tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+            override fun onStart(uttId: String?) {}
+            override fun onDone(uttId: String?) {
+                _isSpeaking.value = false
+                _status.value = "Слушаю..."
+            }
+            override fun onError(uttId: String?) {
+                _isSpeaking.value = false
+                _status.value = "Слушаю..."
+            }
+        })
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "ai")
     }
 
     fun toggleLearning() {
@@ -81,42 +91,37 @@ class VoiceAIEngine(private val context: Context) {
         _status.value = if (new) "🎓 Учусь! Говори что-нибудь" else "Слушаю..."
     }
 
-    fun learn(text: String) {
+    private fun learn(text: String) {
         if (_isLearning.value && text.isNotBlank()) {
             learned.add(text)
             memory[text.lowercase().take(50)] = "Я запомнила: $text"
-            _status.value = "📝 Запомнила! ($text)"
+            _status.value = "📝 Запомнила: ${text.take(30)}..."
         }
     }
 
-    fun respond(input: String): String {
+    private fun respond(input: String): String {
         val lower = input.lowercase().trim()
-
-        if (learned.isNotEmpty()) {
-            for (item in learned) {
-                if (lower.contains(item.lowercase().take(20))) {
-                    return "Я помню! Ты говорил: $item"
-                }
+        for (item in learned.reversed()) {
+            if (lower.contains(item.lowercase().take(20))) {
+                return "Я помню! Ты говорил: $item"
             }
         }
-
         return memory.entries.find { lower.contains(it.key) }?.value
-            ?: defaultResponses.entries.find { lower.contains(it.key) }?.value
-            ?: "Ой, я не совсем поняла... Расскажи подробнее, я запомню! 🎀"
+            ?: responses.entries.find { lower.contains(it.key) }?.value
+            ?: "Ой, я не совсем поняла... Расскажи подробнее, я запомню!"
     }
 
-    private fun startListening() {
-        if (recognizer != null) return
+    private fun startRecognizer() {
+        stopRecognizer()
         recognizer = SpeechRecognizer.createSpeechRecognizer(context)
         recognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) { _status.value = "🎤 Слушаю..." }
-            override fun onBeginningOfSpeech() { _status.value = "🎤 Слышу..." }
+            override fun onBeginningOfSpeech() { _status.value = "🎤 Слышу тебя..." }
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() { _status.value = "Обрабатываю..." }
             override fun onError(error: Int) {
-                _status.value = "Ошибка $error"
-                if (isListening) scheduleRestart()
+                if (listening) scheduleRestart()
             }
             override fun onResults(results: Bundle?) {
                 val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
@@ -128,36 +133,15 @@ class VoiceAIEngine(private val context: Context) {
                         speak(reply)
                     }
                 }
-                if (isListening) scheduleRestart()
+                if (listening) scheduleRestart()
             }
             override fun onPartialResults(partialResults: Bundle?) {}
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
+        doListen()
     }
 
-    fun startContinuousListening() {
-        isListening = true
-        _isListening.value = true
-        restartListening()
-    }
-
-    fun stopContinuousListening() {
-        isListening = false
-        _isListening.value = false
-        recognizer?.stopListening()
-        tts?.stop()
-        _status.value = "Остановлена"
-    }
-
-    private fun scheduleRestart() {
-        if (isListening) {
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                if (isListening) restartListening()
-            }, 500)
-        }
-    }
-
-    private fun restartListening() {
+    private fun doListen() {
         try {
             val intent = android.content.Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -168,14 +152,47 @@ class VoiceAIEngine(private val context: Context) {
             }
             recognizer?.startListening(intent)
         } catch (_: Exception) {
-            _status.value = "Ошибка запуска"
+            _status.value = "Ошибка микрофона"
         }
+    }
+
+    private fun stopRecognizer() {
+        try {
+            recognizer?.stopListening()
+            recognizer?.destroy()
+        } catch (_: Exception) {}
+        recognizer = null
+    }
+
+    fun startContinuousListening() {
+        listening = true
+        _isListening.value = true
+        if (ttsReady) {
+            startRecognizer()
+        } else {
+            _status.value = "Загрузка голоса..."
+        }
+    }
+
+    fun stopContinuousListening() {
+        listening = false
+        _isListening.value = false
+        stopRecognizer()
+        tts?.stop()
+        _status.value = "Остановлена"
+    }
+
+    private fun scheduleRestart() {
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if (listening) doListen()
+        }, 300)
     }
 
     fun destroy() {
         stopContinuousListening()
-        recognizer?.destroy()
-        tts?.stop()
-        tts?.shutdown()
+        try {
+            tts?.stop()
+            tts?.shutdown()
+        } catch (_: Exception) {}
     }
 }
