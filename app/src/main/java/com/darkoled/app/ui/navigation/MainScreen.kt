@@ -41,6 +41,7 @@ import com.darkoled.app.ui.home.HomeScreen
 import com.darkoled.app.ui.chats.ChatDetailScreen
 import com.darkoled.app.ui.chats.ChatListScreen
 import com.darkoled.app.ui.news.NewsFeedScreen
+import com.darkoled.app.ui.security.SecurityScreen
 import com.darkoled.app.ui.settings.SettingsScreen
 import com.darkoled.app.theme.LocalThemeState
 
@@ -48,6 +49,7 @@ import com.darkoled.app.theme.LocalThemeState
 fun MainScreen() {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var selectedChat by rememberSaveable { mutableStateOf<Chat?>(null) }
+    var showSecurityScreen by remember { mutableStateOf(false) }
     val tabCount = 4
     val themeState = LocalThemeState.current
 
@@ -57,6 +59,11 @@ fun MainScreen() {
             theme = themeState.chatTheme,
             onBack = { selectedChat = null }
         )
+        return
+    }
+
+    if (showSecurityScreen) {
+        SecurityScreen(onBack = { showSecurityScreen = false })
         return
     }
 
@@ -74,7 +81,7 @@ fun MainScreen() {
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                     tonalElevation = 0.dp
                 ) {
-                    val tabLabels = listOf("Home", "Chats", "News", "Profile")
+                    val tabLabels = listOf("Voice AI", "Chats", "Shorts", "Profile")
 
                     tabLabels.forEachIndexed { index, label ->
                         val isSelected = selectedTab == index
@@ -150,7 +157,7 @@ fun MainScreen() {
                     0 -> HomeScreen(modifier = Modifier.padding(innerPadding))
                  1 -> ChatListScreen(modifier = Modifier.padding(innerPadding), onChatClick = { selectedChat = it })
                 2 -> NewsFeedScreen(modifier = Modifier.padding(innerPadding))
-                3 -> SettingsScreen(modifier = Modifier.padding(innerPadding))
+                 3 -> SettingsScreen(modifier = Modifier.padding(innerPadding), onOpenSecurity = { showSecurityScreen = true })
             }
         }
     }
